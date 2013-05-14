@@ -10,19 +10,32 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Collections.Generic;
 using System.IO;
+using System.Diagnostics;
 using Microsoft.Win32;
 
 namespace Mandelbrot {
     public class Mandelbrot : Window {
-        private const double WIDTH = 4.0;
-        private const double HEIGHT = 4.0;
+        private const double WIDTH = 3.0;
+        private const double HEIGHT = 3.0;
 
         private const ushort WhiteColorCode = 65535;
         private const ushort BlackColorCode = 0;
+        private const ushort NoiseColorCode = 65535/4;
+        private const ushort HalfNoiseColorCode = 65535/2;
+
+        private const int MaxRowItem = 10;
+        private const int MaxColumnItem = 2;
+
+        private const String XstartString = "X Start: ";
+        private const String YstartString = "Y Start: ";
+        private const String WidthString = "Width : ";
+        private const String HeightString = "Height: ";
+        private const String RowString = "Row: ";
+        private const String ColumnString = "Column: ";
+        private const String MaxIterationString = "Max Iterations: ";
+        private const String MaxModulusString = "Max Modulus: ";
 
         private DockPanel dock;
-        private TextBox widthTextBox;
-        private TextBox heightTextBox;
         private Button generateButton;
         private Random random;
         private ComplexGrid complexGrid;
@@ -33,6 +46,8 @@ namespace Mandelbrot {
         private BitmapSource bitmapSource;
         private bool dataGridFlag;
 
+        private Dictionary<string, TextBox> options;
+
         [STAThread]
         public static void Main() {
             Application app = new Application();
@@ -40,77 +55,66 @@ namespace Mandelbrot {
         }
 
         public Mandelbrot() {
-            Title = "Meet the Dockers";
+            Title = "MandelBrot Set";
             dock = new DockPanel();
-            dock.Background = Brushes.YellowGreen;
+            dock.Background = Brushes.RosyBrown;
             Content = dock;
             dataGridFlag = false;
             image = new Image();
             random = new Random();
             saveFileDialog = new SaveFileDialog();
             openFileDialog = new OpenFileDialog();
+            options = new Dictionary<string, TextBox>();
             BuildMenu();
             BuildGrid();
             BuildCanvas();
         }
 
-        private void FillDataGrid(int row, int column) {
-            complexGrid = new ComplexGrid(-2.0, -2.0, WIDTH, HEIGHT, row, column, 100, 2.0);
-            complexGrid.GenerateIterationCounts();
-            dataGridFlag = true;
+        private void AddOptionToGrid(Grid grid, String label, int row, int column) {
+            Label lb = new Label();
+            lb.Content = label;
+            grid.Children.Add(lb);
+            Grid.SetRow(lb, row);
+            Grid.SetColumn(lb, column);
+            TextBox tb = new TextBox();
+            tb.Width = 100;
+            grid.Children.Add(tb);
+            Grid.SetRow(tb, row);
+            Grid.SetColumn(tb, column + 1);
+            options.Add(label, tb);
         }
 
         private void BuildGrid() {
             Grid grid = new Grid();
             DockPanel.SetDock(grid, Dock.Left);
             dock.Children.Add(grid);
-            // Row and column definitions.
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < MaxRowItem; i++) {
                 RowDefinition rowdef = new RowDefinition();
                 rowdef.Height = GridLength.Auto;
                 grid.RowDefinitions.Add(rowdef);
             }
-            for (int i = 0; i < 2; i++) {
+            for (int i = 0; i < MaxColumnItem; i++) {
                 ColumnDefinition coldef = new ColumnDefinition();
                 coldef.Width = GridLength.Auto;
                 grid.ColumnDefinitions.Add(coldef);
             }
 
-            // [0, 0]
-            Label lbl = new Label();
-            lbl.Content = "Width: ";
-            grid.Children.Add(lbl);
-            Grid.SetRow(lbl, 0);
-            Grid.SetColumn(lbl, 0);
-
-            // [1, 0]
-            lbl = new Label();
-            lbl.Content = "Height: ";
-            grid.Children.Add(lbl);
-            Grid.SetRow(lbl, 1);
-            Grid.SetColumn(lbl, 0);
-
-            // [2, 0]
+            AddOptionToGrid(grid, XstartString, 0, 0);
+            AddOptionToGrid(grid, YstartString, 1, 0);
+            AddOptionToGrid(grid, WidthString, 2, 0);
+            AddOptionToGrid(grid, HeightString, 3, 0);
+            AddOptionToGrid(grid, RowString, 4, 0);
+            AddOptionToGrid(grid, ColumnString, 5, 0);
+            AddOptionToGrid(grid, MaxIterationString, 6, 0);
+            AddOptionToGrid(grid, MaxModulusString, 7, 0);
+            
+            // last button
             generateButton = new Button();
             generateButton.Content = "Generate";
             generateButton.Click += GenerateButtonClick;
             grid.Children.Add(generateButton);
-            Grid.SetRow(generateButton, 2);
-            Grid.SetColumn(generateButton, 0);
-
-            // [0, 1]
-            widthTextBox = new TextBox();
-            widthTextBox.Width = 100;
-            grid.Children.Add(widthTextBox);
-            Grid.SetRow(widthTextBox, 0);
-            Grid.SetColumn(widthTextBox, 1);
-
-            // [1, 1]
-            heightTextBox = new TextBox();
-            heightTextBox.Width = 100;
-            grid.Children.Add(heightTextBox);
-            Grid.SetRow(heightTextBox, 1);
-            Grid.SetColumn(heightTextBox, 1);
+            Grid.SetRow(generateButton, 8);
+            Grid.SetColumn(generateButton, 1);
         }
 
         private void SaveGridItemClick(object sender, RoutedEventArgs args) {
@@ -176,21 +180,27 @@ namespace Mandelbrot {
                 }
                 bitmapSource = GenerateImageSource(row, column);
                 image.Source = bitmapSource;
-                widthTextBox.Text = column.ToString();
-                heightTextBox.Text = row.ToString();
             }
         }
 
+        private void ParseInput() {
+            double width = Double.Parse(options[WidthString].Text.ToString());
+            double height = Double.Parse(options[HeightString].Text.ToString());
+            double xStart = Double.Parse(options[XstartString].Text.ToString());
+            double yStart = Double.Parse(options[YstartString].Text.ToString());
+            int rows = Int32.Parse(options[RowString].Text.ToString());
+            int columns = Int32.Parse(options[ColumnString].Text.ToString());
+            int maxIteration = Int32.Parse(options[MaxIterationString].Text.ToString());
+            double maxModulus = Double.Parse(options[MaxModulusString].Text.ToString());
+            complexGrid = new ComplexGrid(xStart, yStart, width, height, rows, columns, maxIteration, maxModulus);
+            complexGrid.GenerateIterationCounts();
+            dataGridFlag = true;
+        }
+
         private void GenerateButtonClick(object sender, RoutedEventArgs args) {
-            if (widthTextBox.Text == "" || heightTextBox.Text == "") {
-                MessageBox.Show("Either width or height is empty");
-            }
-            else {
-                int row = Int32.Parse(widthTextBox.Text.ToString());
-                int column = Int32.Parse(widthTextBox.Text.ToString());
-                FillDataGrid(row, column);
-                AddBitmapSource(row, column); 
-            }
+            ParseInput();
+            bitmapSource = GenerateImageSource(complexGrid.Rows, complexGrid.Columns);
+            image.Source = bitmapSource;
         }
 
         private void BuildMenu() {
@@ -225,11 +235,6 @@ namespace Mandelbrot {
             dock.Children.Add(menu);
         }
 
-        private void AddBitmapSource(int row, int col) {
-            bitmapSource = GenerateImageSource(row, col);
-            image.Source = bitmapSource;
-        }
-
         private BitmapSource GenerateImageSource(int row, int col) {
             ushort[] pixels = new ushort[row * col];
             int[,] data = complexGrid.Data;
@@ -243,6 +248,7 @@ namespace Mandelbrot {
                     } else {
                         pixels[k] = (ushort)(WhiteColorCode - (ushort)data[x, y]);
                     }
+                    Debug.WriteLine(data[x, y]);
                 }
             }
             int bitsPerPixel = 16;

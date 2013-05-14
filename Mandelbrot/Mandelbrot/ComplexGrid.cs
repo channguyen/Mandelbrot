@@ -79,18 +79,18 @@ namespace Mandelbrot {
         private double dx;
         private double dy;
 
-        public ComplexGrid(double xs, double ys, double w, double h, int c, int r, int mi, double mm) {
-            xStart = xs;
-            yStart = ys;
-            width = w;
-            height = h;
-            rows = r;
-            cols = c;
-            data = new int[rows, cols];
-            maxIter = mi;
-            maxModulus = mm;
-            dx = width / (cols - 1);
-            dy = height / (rows - 1);
+        public ComplexGrid(double xStart, double yStart, double width, double height, int rows, int columns, int maxIteration, double maxModulus) {
+            this.xStart = xStart;
+            this.yStart = yStart;
+            this.width = width;
+            this.height = height;
+            this.rows = rows;
+            this.cols = columns;
+            this.maxIter = maxIteration;
+            this.maxModulus = maxModulus;
+            this.dx = this.width / (cols - 1);
+            this.dy = this.height / (rows - 1);
+            this.data = new int[rows, cols];
         }
 
         public int[,] Data {
@@ -105,17 +105,33 @@ namespace Mandelbrot {
             }
         }
 
+        public int Rows {
+            get {
+                return rows;
+            }
+        }
+
+        public int Columns {
+            get {
+                return cols;
+            }
+        }
+
+        public double MaxModulus {
+            get {
+                return maxModulus;
+            }
+        }
+
         public Complex ToComplex(int row, int col) {
-            return new Complex(yStart + col * dy, xStart + row * dx);
+            return new Complex(xStart + col * dx, yStart + row * dy);
         }
 
         public void GenerateIterationCounts() {
-            int value = 0;
             for (int x = 0; x < rows; ++x) {
                 for (int y = 0; y < cols; ++y) {
                     Complex c = ToComplex(x, y);
-                    value = IsMember(c);
-                    data[x, y] = value;
+                    data[x, y] = IsMember(c);
                 }
             }
         }

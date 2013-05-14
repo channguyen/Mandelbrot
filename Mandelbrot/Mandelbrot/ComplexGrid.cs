@@ -129,10 +129,9 @@ namespace Mandelbrot {
                     break;
                 }
             }
-
-            if (count == maxIterations)
+            if (count == maxIterations) {
                 return 0; // black
-
+            }
             return count;
         }
     }

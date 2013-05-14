@@ -41,15 +41,11 @@ namespace Mandelbrot {
             dock = new DockPanel();
             dock.Background = Brushes.YellowGreen;
             Content = dock;
-
             dataGridFlag = false;
-
             image = new Image();
             random = new Random();
-
             saveFileDialog = new SaveFileDialog();
             openFileDialog = new OpenFileDialog();
-
             BuildMenu();
             BuildGrid();
             BuildCanvas();
@@ -62,19 +58,15 @@ namespace Mandelbrot {
         }
 
         private void BuildGrid() {
-            // Create the grid.
             Grid grid = new Grid();
-
             DockPanel.SetDock(grid, Dock.Left);
             dock.Children.Add(grid);
-
             // Row and column definitions.
             for (int i = 0; i < 3; i++) {
                 RowDefinition rowdef = new RowDefinition();
                 rowdef.Height = GridLength.Auto;
                 grid.RowDefinitions.Add(rowdef);
             }
-
             for (int i = 0; i < 2; i++) {
                 ColumnDefinition coldef = new ColumnDefinition();
                 coldef.Width = GridLength.Auto;
@@ -130,13 +122,10 @@ namespace Mandelbrot {
                 if (saveFileDialog.FileName != "") {
                     int[,] data = complexGrid.Data;
                     using (var stream = new StreamWriter(File.Create(saveFileDialog.FileName))) {
-
                         // write row 
                         stream.WriteLine(data.GetLength(0));
-
                         // write column
                         stream.WriteLine(data.GetLength(1));
-                        
                         // write data
                         for (int x = 0; x < data.GetLength(0); ++x) {
                             for (int y = 0; y < data.GetLength(1); ++y) {
@@ -151,23 +140,19 @@ namespace Mandelbrot {
         }
 
         private void SaveImageItemClick(object sender, RoutedEventArgs args) {
-            saveFileDialog.ShowDialog();
             saveFileDialog.Filter = "JPeg Image|*.jpg|Bitmap Image|*.bmp|Gif Image|*.gif";
             saveFileDialog.Title = "Save an Image File";
             saveFileDialog.ShowDialog();
             if (saveFileDialog.FileName != "") {
-                BitmapImage src = new BitmapImage();
-                src.BeginInit();
-                src.UriSource = new Uri(saveFileDialog.FileName, UriKind.Relative);
-                src.CacheOption = BitmapCacheOption.OnLoad;
-                src.EndInit();
-                bitmapSource = src;
-                image.Source = bitmapSource;
+                JpegBitmapEncoder encoder = new JpegBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(bitmapSource));
+                using (var filestream = new FileStream(saveFileDialog.FileName, FileMode.Create)) {
+                    encoder.Save(filestream);
+                }
             }
         }
 
         private void LoadGridItemClick(object sender, RoutedEventArgs args) {
-            openFileDialog.ShowDialog();
             openFileDialog.Filter = "Text File|*.text";
             openFileDialog.Title = "Load a grid text file";
             openFileDialog.ShowDialog();
@@ -175,18 +160,11 @@ namespace Mandelbrot {
                 int row = 0;
                 int column = 0;
                 using (var stream = new StreamReader(openFileDialog.FileName)) {
-                    // read row
                     row = int.Parse(stream.ReadLine());
-
-                    // read column
                     column = int.Parse(stream.ReadLine());
-
-                    // create a complex grid
                     complexGrid = new ComplexGrid(-2.0, -2.0, WIDTH, HEIGHT, row, column, 100, 2.0);
-
                     string s = "";
                     string[] split = null;
-
                     for (int i = 0; (s = stream.ReadLine()) != null; i++) {
                         split = s.Split(new char[] {' '}, StringSplitOptions.RemoveEmptyEntries);
                         for (int j = 0; j < column; j++) {
@@ -194,7 +172,6 @@ namespace Mandelbrot {
                         }
                     }
                 }
-
                 bitmapSource = GenerateImageSource(row, column);
                 image.Source = bitmapSource;
                 widthTextBox.Text = column.ToString();
@@ -254,32 +231,25 @@ namespace Mandelbrot {
         private BitmapSource GenerateImageSource(int row, int col) {
             ushort[] array = new ushort[row * col];
             int[,] data = complexGrid.Data;
-
             for (int x = 0; x < row; x++) {
                 for (int y = 0; y < col; y++) {
                     // scale it
                     if (data[x, y] != 0)
-                        array[x * col + y] = (ushort)(65535 - (ushort)data[x, y] - 20000);
+                        array[x * col + y] = (ushort)(65535 - (ushort)data[x, y] - 5000);
                     else
                         array[x * col + y] = (ushort)data[x, y];
                 }
             }
-
             int bitsPerPixel = 16;
             int stride = (row * bitsPerPixel + 7) / 8;
-
-            // Create bitmap.
             return BitmapSource.Create(row, col, 96, 96, PixelFormats.Gray16, null, array, stride);
         }
 
         public void BuildCanvas() {
-            // Create a canvas
             canvas = new Canvas();
-
             canvas.Children.Add(image);
             Canvas.SetTop(image, 10);
             Canvas.SetBottom(image, 10);
-
             DockPanel.SetDock(canvas, Dock.Left);
             dock.Children.Add(canvas);
         }

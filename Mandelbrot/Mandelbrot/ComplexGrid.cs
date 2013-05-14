@@ -66,7 +66,7 @@ namespace Mandelbrot {
         /*
          * This is the upper bound of divergence testing
          */
-        private int maxIterations;
+        private int maxIter;
 
         /*
          * This is upper bound for convergence testing
@@ -82,18 +82,13 @@ namespace Mandelbrot {
         public ComplexGrid(double xs, double ys, double w, double h, int c, int r, int mi, double mm) {
             xStart = xs;
             yStart = ys;
-
             width = w;
             height = h;
-
             rows = r;
             cols = c;
-
             data = new int[rows, cols];
-
-            maxIterations = mi;
+            maxIter = mi;
             maxModulus = mm;
-
             dx = width / (cols - 1);
             dy = height / (rows - 1);
         }
@@ -102,6 +97,12 @@ namespace Mandelbrot {
             get {
                 return data;
             } 
+        }
+
+        public int MaxIteration {
+            get {
+                return maxIter;
+            }
         }
 
         public Complex ToComplex(int row, int col) {
@@ -125,12 +126,9 @@ namespace Mandelbrot {
             while (true) {
                 z = (z * z) + c;
                 count++;
-                if (z.Modulus >= maxModulus || count >= maxIterations) {
+                if (z.Modulus >= maxModulus || count >= maxIter) {
                     break;
                 }
-            }
-            if (count == maxIterations) {
-                return 0; // black
             }
             return count;
         }

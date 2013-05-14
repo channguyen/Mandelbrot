@@ -17,6 +17,9 @@ namespace Mandelbrot {
         private const double WIDTH = 4.0;
         private const double HEIGHT = 4.0;
 
+        private const ushort WhiteColorCode = 65535;
+        private const ushort BlackColorCode = 0;
+
         private DockPanel dock;
         private TextBox widthTextBox;
         private TextBox heightTextBox;
@@ -115,7 +118,6 @@ namespace Mandelbrot {
                 MessageBox.Show("Data is not available yet");
             }
             else {
-                saveFileDialog.ShowDialog();
                 saveFileDialog.Filter = "Text file|*.txt";
                 saveFileDialog.Title = "Save Grid as text file";
                 saveFileDialog.ShowDialog();
@@ -229,20 +231,23 @@ namespace Mandelbrot {
         }
 
         private BitmapSource GenerateImageSource(int row, int col) {
-            ushort[] array = new ushort[row * col];
+            ushort[] pixels = new ushort[row * col];
             int[,] data = complexGrid.Data;
+            int maxi = complexGrid.MaxIteration;
+            int k = 0;
             for (int x = 0; x < row; x++) {
                 for (int y = 0; y < col; y++) {
-                    // scale it
-                    if (data[x, y] != 0)
-                        array[x * col + y] = (ushort)(65535 - (ushort)data[x, y] - 5000);
-                    else
-                        array[x * col + y] = (ushort)data[x, y];
+                    k = (x * col) + y;
+                    if (data[x, y] == maxi) {
+                        pixels[k] = BlackColorCode;
+                    } else {
+                        pixels[k] = (ushort)(WhiteColorCode - (ushort)data[x, y]);
+                    }
                 }
             }
             int bitsPerPixel = 16;
             int stride = (row * bitsPerPixel + 7) / 8;
-            return BitmapSource.Create(row, col, 96, 96, PixelFormats.Gray16, null, array, stride);
+            return BitmapSource.Create(row, col, 96, 96, PixelFormats.Gray16, null, pixels, stride);
         }
 
         public void BuildCanvas() {
